@@ -20,13 +20,16 @@
  */
 
 /**
- * Command line app to manage the Proxy
+ * Command line administration client for SVMP
  */
 
 var
     program = require('commander'),
     colors = require('colors'),
-    svmp = require(__dirname + '/../lib/svmp'),
+    fs = require('fs'),
+    overseerClient = require('svmp-overseer-client'),
+    config = require('nconf'),
+    yaml = require('js-yaml'),
     Table = require('cli-table');
 
 colors.setTheme({
@@ -43,7 +46,11 @@ colors.setTheme({
 });
 
 
-program.version(svmp.VERSION);
+/**
+ * Current version used. Read from package.json
+ * @type {String}
+ */
+program.version(require('../package.json').version);
 
 program
     .command('list')
@@ -51,7 +58,7 @@ program
     .action(function () {
         console.log('');
         console.log('Proxy users:'.bold.help);
-        svmp.overseerClient.listUsers(function (err, res) {
+        svmp.listUsers(function (err, res) {
             if (!badResponse(err, res)) {
                 var list = res.body.users;
                 var table = new Table({
@@ -77,7 +84,6 @@ program
                 console.log(table.toString());
                 console.log('');
             }
-            svmp.shutdown();
         });
     });
 
@@ -87,7 +93,7 @@ program
     .action(function () {
         console.log('');
         console.log('Supported device types:'.bold.help);
-        svmp.overseerClient.listDevices(function (err, res) {
+        svmp.listDevices(function (err, res) {
             if (!badResponse(err, res)) {
                 var images = res.body;
                 var table = new Table({
@@ -99,7 +105,6 @@ program
                 console.log(table.toString());
                 console.log('');
             }
-            svmp.shutdown();
         });
     });
 
@@ -110,12 +115,11 @@ program
         console.log('');
         console.log('Clearing user information...'.bold.help);
         var update = {vm_ip: "", vm_id: ""};
-        svmp.overseerClient.updateUser(un, update, function (err, res) {
+        svmp.updateUser(un, update, function (err, res) {
             if (!badResponse(err, res)) {
                 console.log('    Done! Cleared VM IP and VM ID for user:', un);
                 console.log('');
             }
-            svmp.shutdown();
         });
     });
 
@@ -125,13 +129,12 @@ program
     .action(function (un) {
         console.log('');
         console.log('Finding user information...'.bold.help);
-        svmp.overseerClient.getUser(un, function (err, res) {
+        svmp.getUser(un, function (err, res) {
             if (!badResponse(err, res)) {
                 var user = res.body.user;
                 console.log(JSON.stringify(user, null, 4).data);
                 console.log('');
             }
-            svmp.shutdown();
         });
     });
 
@@ -141,13 +144,12 @@ program
     .action(function (un, pw, email, dev) {
         console.log('');
         console.log('Adding a new user...'.bold.help);
-        svmp.overseerClient.createUser(un, pw, email, dev, function (err, res) {
+        svmp.createUser(un, pw, email, dev, function (err, res) {
             if (!badResponse(err, res)) {
                 console.log('    Done! Created user:', un);
                 console.log('    NOTE: The user does NOT have a volume assigned; use the "volume-create" command to do so'.warn);
                 console.log('');
             }
-            svmp.shutdown();
         });
     });
 
@@ -157,7 +159,7 @@ program
     .action(function (un, pw, email, dev) {
         console.log('');
         console.log('Adding a new user...'.bold.help);
-        svmp.overseerClient.createUser(un, pw, email, dev, function (err, res) {
+        svmp.createUser(un, pw, email, dev, function (err, res) {
             if (!badResponse(err, res)) {
                 console.log('    Created user:', un);
                 console.log('');
@@ -170,10 +172,7 @@ program
                         console.log('    NOTE: The Volume is NOT attached to the user\'s VM.'.warn);
                         console.log('');
                     }
-                    svmp.shutdown();
                 });
-            } else {
-                svmp.shutdown();
             }
         });
     });
@@ -185,12 +184,11 @@ program
         console.log('');
         console.log('Creating a new VM, this may take a few seconds...'.bold.help);
 
-        svmp.overseerClient.setupVM(un, function (err, res) {
+        svmp.setupVM(un, function (err, res) {
             if (!badResponse(err, res)) {
                 console.log('    Done! VM created and running, IP:', res.body.vm_ip);
                 console.log('');
             }
-            svmp.shutdown();
         });
     });
 
@@ -202,12 +200,11 @@ program
         console.log('Updating user\'s VM IP address...'.bold.help);
 
         var update = {vm_ip: vmip, vm_id: ""};
-        svmp.overseerClient.updateUser(un, update, function (err, res) {
+        svmp.updateUser(un, update, function (err, res) {
             if (!badResponse(err, res)) {
                 console.log('    Done! Updated VM IP and cleared VM ID for user:', un);
                 console.log('');
             }
-            svmp.shutdown();
         });
     });
 
@@ -219,7 +216,7 @@ program
         console.log('');
         console.log('Available volumes:'.bold.help);
 
-        svmp.overseerClient.listVolumes(function (err, res) {
+        svmp.listVolumes(function (err, res) {
             if (!badResponse(err, res)) {
                 var r = res.body.volumes;
                 var table = new Table({
@@ -232,7 +229,6 @@ program
                 console.log(table.toString());
                 console.log('');
             }
-            svmp.shutdown();
         });
     });
 
@@ -244,14 +240,13 @@ program
         console.log('Creating data volume for user...'.bold.help);
 
         // add the user's volume
-        svmp.overseerClient.createVolume(un, function (err, res) {
+        svmp.createVolume(un, function (err, res) {
             if (!badResponse(err, res)) {
                 console.log('    Done! Volume created for user:', un);
                 console.log('    ... information saved to user\'s account ...');
                 console.log('    NOTE: The Volume is NOT attached to the user\'s VM'.warn);
                 console.log('');
             }
-            svmp.shutdown();
         });
     });
 
@@ -262,12 +257,11 @@ program
         console.log('');
         console.log('Associating volume with user...'.bold.help);
 
-        svmp.overseerClient.assignVolume(un, volid, function (err, res) {
+        svmp.assignVolume(un, volid, function (err, res) {
             if (!badResponse(err, res)) {
                 console.log('    Done! Updated volume ID for user:', un);
                 console.log('');
             }
-            svmp.shutdown();
         });
     });
 
@@ -278,12 +272,11 @@ program
         console.log('');
         console.log('Deleting user...'.bold.help);
 
-        svmp.overseerClient.deleteUser(un, function (err, res) {
+        svmp.deleteUser(un, function (err, res) {
             if (!badResponse(err, res)) {
                 console.log('    Done!');
                 console.log('');
             }
-            svmp.shutdown();
         });
     });
 
@@ -292,7 +285,7 @@ program
     .description('List available images and flavors on your cloud platform; this information is needed when creating a VM')
     .action(function () {
 
-        svmp.overseerClient.listImages(function (err, res) {
+        svmp.listImages(function (err, res) {
             if (!badResponse(err, res)) {
                 console.log('');
                 console.log('Image flavors available:'.bold.help);
@@ -319,18 +312,41 @@ program
                 console.log(imgTable.toString());
                 console.log('');
             }
-            svmp.shutdown();
         });
     });
 
 
 if (process.argv.length <= 2) {
     console.log('');
-    console.log('    Run "node ./bin/cli -h" to see available commands'.error);
+    console.log('    Run "svmp-config -h" to see available commands'.error);
     console.log('');
     process.exit();
 } else {
-    svmp.init();
+    config.env(['overseer_url', 'auth_token']);
+    if (fs.existsSync(process.env.HOME + '/.svmprc')) {
+        config.file({
+            file: process.env.HOME + '/.svmprc',
+            format: {
+                parse: yaml.safeLoad,
+                stringify: yaml.safeDump
+            }
+        });
+    }
+
+    if (typeof config.get('overseer_url') === 'undefined') {
+        console.log('No overseer_url set.');
+        process.exit();
+    }
+
+    if (typeof config.get('auth_token') === 'undefined') {
+        console.log('No auth_token set.');
+        process.exit();
+    }
+
+    console.log('Using overseer URL: ' + config.get('overseer_url'));
+
+    // Overseer Client
+    var svmp = new overseerClient(config.get('overseer_url'), config.get('auth_token'));
 
     program.parse(process.argv);
 }
