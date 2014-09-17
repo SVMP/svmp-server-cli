@@ -322,7 +322,7 @@ if (process.argv.length <= 2) {
     console.log('');
     process.exit();
 } else {
-    config.env(['overseer_url', 'auth_token']);
+    config.env(['overseer_url', 'auth_token', 'trust_all_certs']);
     if (fs.existsSync(process.env.HOME + '/.svmprc')) {
         config.file({
             file: process.env.HOME + '/.svmprc',
@@ -345,6 +345,11 @@ if (process.argv.length <= 2) {
 
     console.log('Using overseer URL: ' + config.get('overseer_url'));
 
+    if (config.get('trust_all_certs')) {
+        console.log('Trusting ALL server SSL/TLS certificates...'.warn);
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    }
+
     // Overseer Client
     var svmp = new overseerClient(config.get('overseer_url'), config.get('auth_token'));
 
@@ -357,7 +362,7 @@ if (process.argv.length <= 2) {
 function badResponse(err, response) {
     var errText;
     if (err) {
-        errText = '    Error: ';
+        errText = '    Error: ' + err.message;
     }
     else if (response.status !== 200) {
         errText = '    Error code: ' + response.status + ', text: ' + response.text;
