@@ -50,7 +50,7 @@ colors.setTheme({
  * Current version used. Read from package.json
  * @type {String}
  */
-program.version(require('../package.json').version);
+program.version(require('./package.json').version);
 
 program
     .command('list')

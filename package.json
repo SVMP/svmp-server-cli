@@ -1,7 +1,7 @@
 {
   "name": "svmp-server-cli",
-  "description": "SVMP ",
-  "version": "0.0.1",
+  "description": "SVMP management admin tool",
+  "version": "2.0.0",
   "license": "Apache-2.0",
   "url": "https://github.com/SVMP/svmp-server-cli",
   "repository": {
@@ -20,7 +20,7 @@
     "npm": "1.2"
   },
   "bin": {
-    "svmp-config": "./bin/cli.js"
+    "svmp-config": "svmp-server-cli.js"
   },
   "scripts": {
     "test": "grunt"
@@ -31,14 +31,9 @@
     "commander": "~2.2.0",
     "js-yaml": "^3.2.1",
     "nconf": "^0.6.9",
-    "svmp-overseer-client": "git+https://github.com/SVMP/svmp-overseer-client.git"
+    "svmp-overseer-client": "git+https://github.com/SVMP/svmp-overseer-client.git#svmp-2.0.0"
   },
   "optionalDependencies": {},
   "devDependencies": {
-    "grunt": "latest",
-    "grunt-mocha-test": "latest",
-    "grunt-exec": "latest",
-    "mocha": "latest",
-    "grunt-jsdoc": "~0.5.4"
   }
 }

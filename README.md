@@ -2,33 +2,39 @@
 
 Serves as a basic TCP proxy between Android devices and Android VMs running in the cloud. Handles authentication, session management, and proxying messages.
 
-## Setup
+## Installation
 
-### Prerequisites
-* Install [Node.js](http://nodejs.org)
+`npm install -g git+https://github.com/SVMP/svmp-server-cli`
 
-### Install Steps
-1. Download this project
-2. Within the root directory of this project, run this command to install the project and download dependencies:
-```sh
-$ npm install
-```
+## Configuration
 
-### Configuration
+Set the following two variables:
 
-Set shell environment variables:
-```sh
-$ export overseer_url="https://localhost:3000/"
-$ export auth_token="OVERSEER_AUTH_TOKEN"
-$ export trust_all_certs=true # needed when using self-signed certificates
-```
+* `overseer_url` - Full URL to the [SVMP Overseer](https://github.com/SVMP/svmp-overseer)
+* `auth_token` - Admin-role JWT login token obtained from the Overseer's `svmp-create-token` tool
+* `trust_all_certs` - Set to true to disable cert validation checking when using self-signed certs for the Overseer
 
-### Running the CLI
+These can be set either as environment variables or in the YAML-format config file `~/.svmprc`.
 
-Run the command line client from the root directory of the project:
-```sh
-$ node ./bin/cli.js -h
-```
+## Usage
+
+```svmp-server-cli [options] [command]```
+
+Commands:
+
+* `list`                   List proxy Users
+* `devices`                List supported device types
+* `clear-vm-info <username>` Clear the Users VM Information
+* `show <username>`        Show information about a user
+* `add <username> <password> <email> <device_type>` Add a User to system. NOTE: this does NOT create a volume for the User! (Use this command if you aren't using a cloud platform)
+* `add-user-with-volume <username> <password> <email> <device_type>` Add a new User to the system and create a volume for the User
+* `vm <username>`          Create and start a VM for a user in the system.
+* `vm-add <username> <vm_ip_address> Register an existing VM at a given IP address to the user. (For testing/dev ONLY.)
+* `list-volumes`           list available volumes
+* `volume-create <username>` Create and assign a Volume to a user based on the gold snapshot id in config-local
+* `volume-assign <username> <volume_id>` Does not attach Volume to VM, simply associates an existing user data volume with the specified user.
+delete <username>      Delete a User from the Proxy
+* `images`                 List available images and flavors on your cloud platform; this information is needed when creating a VM
 
 ## License
 
