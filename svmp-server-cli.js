@@ -165,7 +165,7 @@ program
                 console.log('');
 
                 // add the user's volume
-                svmp.overseerClient.createVolume(un, function (err, res) {
+                svmp.createVolume(un, function (err, res) {
                     if (!badResponse(err, res)) {
                         console.log('    Volume created for:', un);
                         console.log('    ... information saved to user\'s account ...');
